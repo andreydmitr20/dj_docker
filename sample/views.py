@@ -2,15 +2,13 @@ from django.shortcuts import render
 from dj_docker_drf.postgres_db import Postgres_db
 
 from rest_framework.views import APIView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 
 
 class HomeView(APIView):
 
     def get(self, request, format=None):
         print(request)
-        # return JsonResponse({"message":
-        #  'HELLO D112 FROM DJANGO AND DOCKER'})
         d = Postgres_db('postgres',
                         'postgres',
                         'changeme')
@@ -22,7 +20,12 @@ class HomeView(APIView):
                 'user_id',
                 ['name', 'api_key'])
             d.disconnect()
-            print(json)
-            return JsonResponse(json)
+            # print(json)
+            return HttpResponse(f"""
+            <div>
+                <h1>Home</h1>
+            {json}
+            </div>
+            """)
         return JsonResponse({"message":
                              'Error getting ddata from server'})
