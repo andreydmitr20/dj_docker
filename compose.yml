@@ -2,34 +2,44 @@ version: "3"
 
 services:
   backend:
-    container_name: lks_${ENVIRONMENT}_backend
-    image: 63phc/lks:latest
+    restart: always
+    env_file:
+      - .env
+    image: ${PROJECT}:latest
     build:
-      context: ..
-      dockerfile: .docker/Dockerfile
+      dockerfile: Dockerfile
       args:
-        env: dev
-    restart: always
-    command: bash -c "
-      gunicorn src.core.wsgi:application -w 2 -b 0.0.0.0:8000"
-    volumes:
-      - ./static:/app/static
-      - ./media:/app/media
-    env_file: .env
-    depends_on:
-      - postgresql
-      - redis
+        DockerHOME: ${DockerHOME}
+        DockerPORT: ${DockerPORT}
 
-  celery:
-    container_name: lks_${ENVIRONMENT}_celery
-    image: 63phc/lks:latest
-    restart: always
-    command: bash -c "
-      celery -A src.core.celery worker --loglevel=info --uid=nobody --gid=nogroup"
+    container_name: ${PROJECT}_backend
+    ports:
+      - ${DockerPORT}:${DockerPORT}
     volumes:
-      - ./static:/app/static
-      - ./media:/app/media
-    env_file: .env
+      - ~/.PYTHON/django_tests/dj_docker:${DockerHOME}
+
     depends_on:
       - postgresql
-      - redis
+    links:
+      - postgresql
+
+  postgresql:
+    restart: always
+    env_file: .env
+    image: postgres:13.1-alpine
+
+    container_name: ${PROJECT}_postgres
+    ports:
+      - ${PostgresPORT}:${PostgresPORT}
+    volumes:
+      - ./data/pgdata:${PostgresHOME}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: ${PostgresHOME}
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
